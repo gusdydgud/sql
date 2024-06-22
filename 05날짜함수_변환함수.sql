@@ -1,0 +1,124 @@
+--변환 함수
+
+--형변환함수
+--자동형변환을 재공해줍니다. (문자와 숫자, 문자와 날짜)
+SELECT * FROM EMPLOYEES WHERE SALARY>='20000'; --문자->숫자 자동형변환이 일어남
+SELECT * FROM EMPLOYEES WHERE HIRE_DATE>='08/01/01';--문자 ->날짜 자동형변환
+
+--강제형변환
+--TO_CHAR -> 날짜를 문자로
+SELECT TO_CHAR(SYSDATE,'YYYY-MM-DD HH:MI:SS') FROM DUAL;
+SELECT TO_CHAR( SYSDATE, 'YY-MM-DD PM HH12:MI:SS') AS TIME FROM DUAL;
+SELECT TO_CHAR( SYSDATE, 'YY"년" MM"월" DD"일"') AS TIME FROM DUAL; --데이트 포멧값이 아닌 값을 쓰려면 ""로 묶어줍니다.
+
+--TO_CHAR -> 숫자를 문자로
+SELECT TO_CHAR(20000,'9999999') AS RESULT FROM DUAL; 
+SELECT TO_CHAR(20000,'0999999') AS RESULT FROM DUAL; --남는자리는 0으로 채움
+SELECT TO_CHAR(20000,'999') AS RESULT FROM DUAL; --자리수가 부족하면 #처리됩니다.
+SELECT TO_CHAR(20000.123,'999999999.9999') AS RESULT FROM DUAL; --소수점 4자리까지
+SELECT TO_CHAR(20000,'$99999999') AS RESULT FROM DUAL; --$기호붙이기
+SELECT TO_CHAR(20000,'L99,999,999') AS RESULT FROM DUAL; --L은 지역화폐기호
+
+--오늘 환율 1372.17원 일때 SALARY값을 한국돈으로 표현
+SELECT TO_CHAR(SALARY*1372.17,'L99,999,999,999') AS 돈 FROM EMPLOYEES;
+
+--TO_DATE -> 문자를 날짜로
+SELECT SYSDATE - TO_DATE('2024-06-13','YYYY-MM-DD') FROM DUAL; --날짜모형에 맞춰서 정확히 적음
+SELECT TO_DATE('2024년 06월 13일','YYYY"년" MM"월" DD"일"') FROM DUAL; --날짜 포맷문자가 아니라면 " "
+SELECT TO_DATE('24-06-13 11시 30분 23초','YY-MM-DD HH"시" MI"분" SS"초"') FROM DUAL;
+
+--2024년06월13일 의 문자로 변환한다면?
+SELECT TO_CHAR(TO_DATE('240613','YYMMDD'), 'YYYY"년"MM"월"DD"일"') FROM DUAL;
+
+--TO_NUMBER -> 문자를 숫자로
+SELECT '4000' -1000 FROM DUAL; --자동형변환
+SELECT TO_NUMBER('4000') -1000 FROM DUAL; --명시적변환 후 연산
+
+SELECT '$5,500' - 1000 FROM DUAL; -- 자동형변환X
+SELECT TO_NUMBER('$5,500','$99,999') - 1000 FROM DUAL; --숫자로 변경이 자동으로 불가능한 경우 명시적 변환.
+
+--NULL처리 함수
+SELECT NVL(1000,0),NVL(NULL,0) FROM DUAL;
+SELECT NULL+1000 FROM DUAL; -- NULL에 연산을해도 NULL이 나옴
+
+SELECT FIRST_NAME, SALARY, commission_pct,SALARY+SALARY*NVL(commission_pct,0)AS 최종급여 FROM EMPLOYEES;
+
+
+--NVL2 (대상값, 널이 아닌경우, 널인경우)
+SELECT NVL2(NULL, 'NULL이 아닙니다', 'NULL입니다') FROM DUAL;
+SELECT NVL2(300, 'NULL이 아닙니다', 'NULL입니다') FROM DUAL;
+SELECT FIRST_NAME,SALARY,COMMISSION_PCT,NVL2(COMMISSION_PCT,SALARY+SALARY*COMMISSION_PCT,SALARY)AS 급여 FROM EMPLOYEES;
+
+--COALESCE (값,값,값....) - NULL이 아닌 첫번째 값을 반환 시켜줌
+SELECT COALESCE(1,2,3) FROM DUAL; 
+SELECT COALESCE(NULL,2,3,4) FROM DUAL;
+SELECT COALESCE( NULL,NULL,NULL,3,4,5) FROM DUAL;
+SELECT COALESCE(COMMISSION_PCT,0) FROM EMPLOYEES; --NVL과 같음
+
+--DECODE (대상값, 비교값, 결과값, 비교값, 결과값,....,ELSE문)
+SELECT DECODE('B', 'A','A입니다','B','B입니다') FROM DUAL;
+SELECT DECODE('X','A','A입니다','A가 아님') FROM DUAL; --IF ELSE구문
+SELECT DECODE('X','A','A입니다',
+                  'B','B입니다',
+                  'C','C입니다',
+                  '전부아닙니다') FROM DUAL; --ELSE IF 구문
+
+SELECT JOB_ID,
+DECODE(JOB_ID,'IT_PROG' , SALARY*1.1,
+                     'AD_VP' , SALARY*1.2,
+                     'FI_MGR', SALARY*1.3,
+                     SALARY
+) AS 급여 FROM EMPLOYEES;
+
+
+--CASE WHEN THEN ELSE END (SWITCH문과 비슷)
+SELECT JOB_ID,
+       CASE JOB_ID WHEN 'IT_PROG' THEN SALARY*1.1
+                   WHEN 'AD_VP' THEN SALARY*1.2
+                   WHEN 'FI_MGR' THEN SALARY*1.3
+                   ELSE SALARY
+       END AS 급여
+FROM EMPLOYEES;
+--비교에 대한 조건을 WHEN절에 쓸수 있음
+SELECT JOB_ID,
+       CASE WHEN JOB_ID = 'IT_PROG' THEN SALARY*1.1
+            WHEN JOB_ID = 'AD_VP' THEN SALARY*1.2
+            WHEN JOB_ID = 'FI_MGR' THEN SALARY*1.3
+            ELSE SALARY
+       END AS 급여
+FROM EMPLOYEES;
+                  
+
+SELECT * FROM EMPLOYEES;
+SELECT EMPLOYEE_ID AS 사원번호, FIRST_NAME||LAST_NAME AS 사원명, HIRE_DATE AS 입사날자 , TRUNC((SYSDATE-HIRE_DATE)/365) AS 근속년수 FROM EMPLOYEES WHERE TRUNC((SYSDATE-HIRE_DATE)/365)>=10 ORDER BY HIRE_DATE;
+
+SELECT FIRST_NAME,MANAGER_ID,DECODE(MANAGER_ID,100,'부장',120,'과장',121,'대리',122,'주임','사원') AS 직급 FROM EMPLOYEES WHERE department_id=50;
+SELECT FIRST_NAME,MANAGER_ID,
+    CASE  WHEN MANAGER_ID= 100 THEN '부장'
+          WHEN MANAGER_ID= 120 THEN '과장'
+          WHEN MANAGER_ID= 121 THEN '대리'
+          WHEN MANAGER_ID= 122 THEN '주임'
+          ELSE '사원'
+    END AS 직급
+FROM EMPLOYEES WHERE DEPARTMENT_ID=50;
+
+SELECT FIRST_NAME AS 이름,
+       TO_CHAR(HIRE_DATE,'YYYY"년"MM"월"DD"일"')AS 입사일,
+       TO_CHAR(1300*(SALARY+SALARY*NVL(commission_pct,0)),'L99,999,999,999')AS 최종급여 ,
+       DECODE(MOD(TRUNC((SYSDATE-HIRE_DATE)/365),5),0,'진급대상',
+                                           
+                                                      '다음기회') AS 진급대상
+       FROM EMPLOYEES WHERE department_id IS NOT NULL;
+    
+                    
+
+
+
+
+
+
+
+
+
+
+
